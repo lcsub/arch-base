@@ -20,9 +20,12 @@ sed -i '94s/.//' /etc/pacman.conf
 pacman -Sy
 pacman -S --noconfirm efibootmgr grub xf86-video-amdgpu xorg-server os-prober firefox steam networkmanager alacritty gnome-shell gnome-control-center nautilus gdm gnome-tweak-tool pcsx2 snapper
 
+mkdir /boot/EFI
+mount /dev/nvme0n1p1 /boot/EFI
 os-prober
 echo "GRUB_DISABLE_OS_PROBER=false" >> /etc/default/grub
-grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
+grub-install --target=x86_64-efi --bootloader-id=grub_uefi --recheck
+cp /usr/share/locale/en\@quot/LC_MESSAGES/grub.mo /boot/grub/locale/en.mo
 grub-mkconfig -o /boot/grub/grub.cfg
 
 systemctl enable fstrim.timer
