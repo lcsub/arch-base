@@ -16,13 +16,13 @@ useradd -m lcsub
 echo lcsub:lyt56erw | chpasswd
 echo "lcsub ALL=(ALL) ALL" >> /etc/sudoers.d/lcsub
 pacman -Sy
-pacman -S --noconfirm efibootmgr grub xf86-video-amdgpu xorg-server os-prober qutebrowser xorg-xinit dhcpcd
+pacman -S --noconfirm efibootmgr grub xorg-server networkmanager thermald
 
 # xinit config
-cp /etc/X11/xinit/xinitrc /home/lcsub/.xinitrc
+# cp /etc/X11/xinit/xinitrc /home/lcsub/.xinitrc
 
 # bootloader
-os-prober
+# os-prober
 echo "GRUB_DISABLE_OS_PROBER=false" >> /etc/default/grub
 grub-install --target=x86_64-efi --bootloader-id=grub_uefi --recheck
 cp /usr/share/locale/en\@quot/LC_MESSAGES/grub.mo /boot/grub/locale/en.mo
@@ -30,4 +30,5 @@ grub-mkconfig -o /boot/grub/grub.cfg
 
 # service
 systemctl enable fstrim.timer
-systemctl enable dhcpcd@enp4s0
+systemctl enable NetworkManager
+systemctl enable thermald
