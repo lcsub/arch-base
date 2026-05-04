@@ -1,0 +1,9 @@
+exec tail -n +3 $0
+
+menuentry "Arch - KDE Plasma" {
+    insmod btrfs
+    insmod part_gpt
+    set root=(hd0,gpt5)  # SUBSTITUA X pelo número da partição Btrfs
+    linux /@arch_plasma/boot/vmlinuz-linux root=/dev/sda5 ro rootflags=subvol=@arch_plasma quiet splash
+    initrd /@arch_plasma/boot/initramfs-linux.img
+}

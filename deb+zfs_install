@@ -1,0 +1,90 @@
+#!/bin/bash
+# =======================================================
+# Debian Stable + ZFS (raiz) + XFCE
+# Script conceitual de instalação via debootstrap
+# Autor: Lcsub Glitch-style
+# =======================================================
+
+# ATENÇÃO: este script **apaga todo o disco especificado**
+# Substitua /dev/sda pelo seu disco correto
+
+DISCO="/dev/sda"
+POOL="rpool"
+HOSTNAME="debianbsd"
+MIRROR="http://deb.debian.org/debian"
+
+# 1️⃣ Preparar disco
+echo ">> Limpando disco: $DISCO"
+wipefs -a $DISCO
+sgdisk -Zo $DISCO   # Remove GPT / MBR
+
+# 2️⃣ Criar zpool + datasets
+echo ">> Criando pool ZFS"
+modprobe zfs  # garante que o módulo está carregado
+zpool create -f \
+  -o ashift=12 \
+  -O compression=lz4 \
+  -O normalization=formD \
+  -O mountpoint=/ \
+  $POOL $DISCO
+
+echo ">> Criando datasets"
+zfs create -o mountpoint=/root $POOL/root
+zfs create -o mountpoint=/home $POOL/home
+zfs create -o mountpoint=/var $POOL/var
+zfs create -o mountpoint=/games $POOL/games
+
+# 3️⃣ Montar root para debootstrap
+echo ">> Montando root em /mnt"
+mount -t zfs $POOL/root /mnt
+mkdir -p /mnt/{home,var,games}
+
+mount -t zfs $POOL/home /mnt/home
+mount -t zfs $POOL/var /mnt/var
+mount -t zfs $POOL/games /mnt/games
+
+# 4️⃣ Instalar Debian base via debootstrap
+echo ">> Iniciando debootstrap"
+debootstrap --arch amd64 stable /mnt $MIRROR
+
+# 5️⃣ Chroot e configuração mínima
+echo ">> Configuração chroot"
+mount --bind /dev /mnt/dev
+mount --bind /sys /mnt/sys
+mount --bind /proc /mnt/proc
+
+chroot /mnt /bin/bash <<'CHROOT_SETUP'
+
+# Atualiza APT
+apt update && apt upgrade -y
+
+# Instala kernel e utilitários básicos
+apt install -y linux-image-amd64 linux-headers-amd64 sudo vim wget curl zfs-initramfs zfsutils-linux
+
+# Hostname
+echo "debianbsd" > /etc/hostname
+
+# Instala XFCE e apps essenciais
+apt install -y xfce4 xfce4-goodies xorg lightdm network-manager
+
+# Configura fstab mínimo (datasets são montados via ZFS)
+echo "# ZFS monta automaticamente, fstab vazio" > /etc/fstab
+
+# Usuário de teste
+useradd -m -G sudo lcsub
+echo "lcsub:lcsub" | chpasswd
+
+# Grub para EFI/Legacy (ajustar conforme setup)
+apt install -y grub-pc
+grub-install --recheck /dev/sda
+update-grub
+
+CHROOT_SETUP
+
+# 6️⃣ Finalizando
+echo ">> Desmontando e exportando pool"
+umount -R /mnt
+zpool export $POOL
+
+echo ">> Instalação completa. Reinicie e monte o pool ZFS!"
+

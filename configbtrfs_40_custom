@@ -1,0 +1,19 @@
+#!/bin/sh
+exec tail -n +3 $0
+# This file provides an easy way to add custom menu entries.  Simply type the
+# menu entries you want to add after this comment.  Be careful not to change
+# the 'exec tail' line above.
+#
+
+menuentry "Fedora 43 - BTRFS" {
+    load_video
+    set gfxpayload=keep
+    insmod gzio
+    insmod part_gpt
+    insmod btrfs
+    # SUBSTITUA PELO SEU UUID
+    search --no-floppy --fs-uuid --set=root 7be8be4b-4170-4c46-8d8b-d0d755eb0b48
+    # SUBSTITUA O SubvolName PELA PASTA DO SNAPSHOT
+    linux /@fedora/boot/vmlinuz-6.19.9-200.fc43.x86_64 root=UUID=7be8be4b-4170-4c46-8d8b-d0d755eb0b48 rw rootflags=subvol=@fedora
+    initrd /@fedora/boot/initramfs-6.19.9-200.fc43.x86_64.img
+}
